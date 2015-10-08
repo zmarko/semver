@@ -44,9 +44,9 @@ namespace {
 		const vector<Transition>& transitions, string& target, Validator validate) {
 		for (const auto& t : transitions) {
 			if (c == get<0>(t)) {
+				if (get<2>(t)) get<2>(t)(target);
 				prev_phase = phase;
 				phase = get<1>(t);
-				if (get<2>(t)) get<2>(t)(target);
 				return;
 			}
 		}
@@ -76,7 +76,7 @@ namespace {
 
 namespace version {
 
-	Version_data Semver200_parser::parse(const string& s) {
+	Version_data Semver200_parser::parse(const string& s) const {
 		string major;
 		string minor;
 		string patch;

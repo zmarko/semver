@@ -61,7 +61,7 @@ namespace {
 
 namespace version {
 
-	int Semver200_comparator::compare(const Version_data& l, const Version_data& r) {
+	int Semver200_comparator::compare(const Version_data& l, const Version_data& r) const {
 		int cmp = compare_normal(l, r);
 		if (cmp != 0) return cmp;
 

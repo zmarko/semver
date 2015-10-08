@@ -38,9 +38,9 @@ inline int compare(const std::string& l, const std::string& r) {
 	return c.compare(lv, rv);
 }
 
-#define GT(L, R) BOOST_CHECK(compare(L, R) > 0)
+#define GT(L, R) BOOST_CHECK(compare(L, R) >  0)
 #define GE(L, R) BOOST_CHECK(compare(L, R) >= 0)
-#define LT(L, R) BOOST_CHECK(compare(L, R) < 0)
+#define LT(L, R) BOOST_CHECK(compare(L, R) <  0)
 #define LE(L, R) BOOST_CHECK(compare(L, R) <= 0)
 #define EQ(L, R) BOOST_CHECK(compare(L, R) == 0)
 

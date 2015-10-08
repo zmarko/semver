@@ -122,11 +122,15 @@ BOOST_AUTO_TEST_CASE(parse_build_empty_ids) {
 // optional prerel must come after patch and build after prerel
 BOOST_AUTO_TEST_CASE(parse_prerel_build_order) {
 	CHECK_PREREL_BUILD("1.2.3-r4+b5", 1, 2, 3, Prerelease_identifiers({ {"r4",A} }), Build_identifiers({ "b5" }));
-	CHECK_PREREL_BUILD("1.2.3+b4-r5",1,2,3, no_rel_ids, Build_identifiers({ "b4-r5" }));
+	CHECK_PREREL_BUILD("1.2.3+b4-r5", 1, 2, 3, no_rel_ids, Build_identifiers({ "b4-r5" }));
 }
 
 // check some corner cases
 BOOST_AUTO_TEST_CASE(parse_corner_cases) {
 	CHECK_PARSE_ERROR("1.2.3-r4.+b5");
 	CHECK_PARSE_ERROR("1.2.3-r4+b5.");
+
+	CHECK_PREREL_BUILD("1.2.3-alpha+build.314", 1, 2, 3, Prerelease_identifiers({ {"alpha", A} }),
+		Build_identifiers({ "build","314" }));
+
 }
