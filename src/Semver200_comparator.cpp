@@ -65,11 +65,11 @@ namespace version {
 		int cmp = compare_normal(l, r);
 		if (cmp != 0) return cmp;
 
-		// release version is always higher than prerelease
+		// prerelease version is always higher than prerelease
 		if (l.prerelease_ids.empty() && !r.prerelease_ids.empty()) return 1;
 		if (r.prerelease_ids.empty() && !l.prerelease_ids.empty()) return -1;
 
-		// compare release by looking at each identifier: numeric ones are compared as numbers,
+		// compare prerelease by looking at each identifier: numeric ones are compared as numbers,
 		// alphanum as ASCII strings
 		auto shorter = min(l.prerelease_ids.size(), r.prerelease_ids.size());
 		for (size_t i = 0; i < shorter; i++) {

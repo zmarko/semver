@@ -23,30 +23,44 @@ SOFTWARE.
 */
 
 #include <functional>
+#include <map>
 #include "version.h"
 
 using namespace std;
 
 namespace {
-	enum class Parser_phase {
-		major, minor, patch, release, build
+	enum class Parser_state {
+		major, minor, patch, prerelease, build
 	};
 
-	using Phase_transition_hook = function<void(string&)>;
-	using Transition = tuple<const char, Parser_phase, Phase_transition_hook>;
 	using Validator = function<void(const string&, const char)>;
+	using State_transition_hook = function<void(string&)>;
+	/// State transition is described by a character that triggers it, a cstate to transition to and
+	/// optional hook to be invoked on transition.
+	using Transition = tuple<const char, Parser_state, State_transition_hook>;
+	using Transitions = vector<Transition>;
+	using State = tuple<Transitions, string&, Validator>;
+	using State_machine = map<Parser_state, State>;
 
-	inline Transition mkx(const char c, Parser_phase p, Phase_transition_hook pth) {
+	inline Transition mkx(const char c, Parser_state p, State_transition_hook pth) {
 		return make_tuple(c, p, pth);
 	}
 
-	inline void process_char(const char c, Parser_phase& phase, Parser_phase& prev_phase,
-		const vector<Transition>& transitions, string& target, Validator validate) {
-		for (const auto& t : transitions) {
-			if (c == get<0>(t)) {
-				if (get<2>(t)) get<2>(t)(target);
-				prev_phase = phase;
-				phase = get<1>(t);
+	/// Advance parser cstate machine by a single step.
+	/**
+	Perform single step of parser cstate machine: if character matches one from transition tables -
+	trigger transition to next cstate; otherwise, validate if current token is in legal cstate
+	(throw Parse_error if not) and then add character to current token; State transition includes
+	preparing various vars for next cstate and invoking cstate transition hook (if specified) which is
+	where whole tokens are validated.
+	*/
+	inline void process_char(const char c, Parser_state& cstate, Parser_state& pstate,
+		const Transitions& transitions, string& target, Validator validate) {
+		for (const auto& transition : transitions) {
+			if (c == get<0>(transition)) {
+				if (get<2>(transition)) get<2>(transition)(target);
+				pstate = cstate;
+				cstate = get<1>(transition);
 				return;
 			}
 		}
@@ -54,108 +68,128 @@ namespace {
 		target.push_back(c);
 	}
 
+	/// Validate normal (major, minor, patch) version components.
 	inline void normal_version_validator(const string& tgt, const char c) {
 		if (c < '0' || c > '9') throw version::Parse_error("invalid character encountered: " + string(1, c));
 		if (tgt.compare(0, 1, "0") == 0) throw version::Parse_error("leading 0 not allowed");
 	}
 
-	inline void release_version_validator(const string& tgt, const char c) {
+	/// Validate prerelease and build version components.
+	inline void prerelease_version_validator(const string& tgt, const char c) {
 		if ((c < '0' || c > '9') && (c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && c != '.' && c != '-')
 			throw version::Parse_error("invalid character encountered: " + string(1, c));
 	}
 
-	bool is_identifier_numeric(const string& id) {
+	inline bool is_identifier_numeric(const string& id) {
 		return id.find_first_not_of("0123456789") == string::npos;
 	}
 
-	bool check_identifier_for_leading_0(const string& id) {
-		return id.length() > 1 && id[0] == '0';
+	inline bool check_for_leading_0(const string& str) {
+		return str.length() > 1 && str[0] == '0';
 	}
+
+	/// Validate every individual prerelease identifier, determine it's type and add it to collection.
+	void prerelease_hook_impl(string& id, version::Prerelease_identifiers& prerelease) {
+		using namespace version;
+		if (id.empty()) throw Parse_error("version identifier cannot be empty");
+		Identifier_type t = Identifier_type::alnum;
+		if (is_identifier_numeric(id)) {
+			t = Identifier_type::num;
+			if (check_for_leading_0(id)) {
+				throw Parse_error("numeric identifiers cannot have leading 0");
+			}
+		}
+		prerelease.push_back(Prerelease_identifier(id, t));
+		id.clear();
+	};
+
+	/// Validate every individual build identifier and add it to collection.
+	void build_hook_impl(string& id, Parser_state& pstate, version::Build_identifiers& build,
+		std::string& prerelease_id, version::Prerelease_identifiers& prerelease) {
+		// process last token left from parsing prerelease data
+		if (pstate == Parser_state::prerelease) prerelease_hook_impl(prerelease_id, prerelease);
+		if (id.empty()) throw version::Parse_error("version identifier cannot be empty");
+		build.push_back(id);
+		id.clear();
+	};
+
 
 }
 
 namespace version {
 
+	/// Parse semver 2.0.0-compatible string to Version_data structure.
+	/**
+	Version text parser is implemented as a state machine. In each step one successive character from version
+	string is consumed and is either added to current token or triggers state transition. Hooks can be
+	injected into state transitions for validation/customization purposes.
+	*/
 	Version_data Semver200_parser::parse(const string& s) const {
 		string major;
 		string minor;
 		string patch;
-		string release_id;
+		string prerelease_id;
 		string build_id;
-		Prerelease_identifiers release;
+		Prerelease_identifiers prerelease;
 		Build_identifiers build;
-		Parser_phase prev_phase;
+		Parser_state cstate{ Parser_state::major };
+		Parser_state pstate;
 
-		auto release_hook = [&](string& id) {
-			if (id.empty()) throw version::Parse_error("version identifier cannot be empty");
-			Identifier_type t = Identifier_type::alnum;
-			if (is_identifier_numeric(id)) {
-				t = Identifier_type::num;
-				if (check_identifier_for_leading_0(id)) {
-					throw Parse_error("numeric identifiers cannot have leading 0");
-				}
-			}
-			release.push_back(Prerelease_identifier(id, t));
-			id.clear();
+		auto prerelease_hook = [&](string& id) {
+			prerelease_hook_impl(id, prerelease);
 		};
 
 		auto build_hook = [&](string& id) {
-			// process last token left from parsing release data
-			if (prev_phase == Parser_phase::release) release_hook(release_id);
-			if (id.empty()) throw version::Parse_error("version identifier cannot be empty");
-			build.push_back(id);
-			id.clear();
+			build_hook_impl(id, pstate, build, prerelease_id, prerelease);
 		};
 
-		auto major_xs = {
-			mkx('.', Parser_phase::minor, {})
+		// Phase transition tables
+		auto major_trans = {
+			mkx('.', Parser_state::minor, {})
 		};
-		auto minor_xs = {
-			mkx('.', Parser_phase::patch, {})
+		auto minor_trans = {
+			mkx('.', Parser_state::patch, {})
 		};
-		auto patch_xs = {
-			mkx('-', Parser_phase::release, {}),
-			mkx('+', Parser_phase::build, {})
+		auto patch_trans = {
+			mkx('-', Parser_state::prerelease, {}),
+			mkx('+', Parser_state::build, {})
 		};
-		auto release_xs = {
-			mkx('.', Parser_phase::release, release_hook),
-			mkx('+', Parser_phase::build, {})
+		auto prerelease_trans = {
+			// When identifier separator (.) is found, stay in the same state but invoke hook
+			// in order to process each individual identifier separately.
+			mkx('.', Parser_state::prerelease, prerelease_hook),
+			mkx('+', Parser_state::build, {})
 		};
-		auto build_xs = {
-			mkx('.', Parser_phase::build, build_hook)
+		auto build_trans = {
+			// Same stay-in-the-same-state-but-invoke-hook trick from above.
+			mkx('.', Parser_state::build, build_hook)
 		};
-		Parser_phase phase = Parser_phase::major;
+
+		State_machine state_machine = {
+			{Parser_state::major, State{major_trans, major, normal_version_validator}},
+			{Parser_state::minor, State{minor_trans, minor, normal_version_validator}},
+			{Parser_state::patch, State{patch_trans, patch, normal_version_validator}},
+			{Parser_state::prerelease, State{prerelease_trans, prerelease_id, prerelease_version_validator}},
+			{Parser_state::build, State{build_trans, build_id, prerelease_version_validator}}
+		};
+
+		// Main loop.
 		for (const auto& c : s) {
-			switch (phase) {
-			case Parser_phase::major:
-				process_char(c, phase, prev_phase, major_xs, major, normal_version_validator);
-				break;
-			case Parser_phase::minor:
-				process_char(c, phase, prev_phase, minor_xs, minor, normal_version_validator);
-				break;
-			case Parser_phase::patch:
-				process_char(c, phase, prev_phase, patch_xs, patch, normal_version_validator);
-				break;
-			case Parser_phase::release:
-				process_char(c, phase, prev_phase, release_xs, release_id, release_version_validator);
-				break;
-			case Parser_phase::build:
-				process_char(c, phase, prev_phase, build_xs, build_id, release_version_validator);
-				break;
-			}
+			auto state = state_machine.at(cstate);
+			process_char(c, cstate, pstate, get<0>(state), get<1>(state), get<2>(state));
 		}
 
-		// Trigger appropriate hooks in order to process last token, because no phase transition was
+		// Trigger appropriate hooks in order to process last token, because no state transition was
 		// triggered for it.
-		if (phase == Parser_phase::release) {
-			release_hook(release_id);
+		if (cstate == Parser_state::prerelease) {
+			prerelease_hook(prerelease_id);
 		}
-		if (phase == Parser_phase::build) {
+		if (cstate == Parser_state::build) {
 			build_hook(build_id);
 		}
 
 		try {
-			return Version_data{ stoi(major), stoi(minor), stoi(patch), release, build };
+			return Version_data{ stoi(major), stoi(minor), stoi(patch), prerelease, build };
 		} catch (invalid_argument& ex) {
 			throw Parse_error(ex.what());
 		}
