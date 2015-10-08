@@ -23,7 +23,6 @@ SOFTWARE.
 */
 
 #include <functional>
-#include <vector>
 #include "version.h"
 
 using namespace std;
