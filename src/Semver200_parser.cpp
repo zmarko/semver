@@ -42,7 +42,7 @@ namespace {
 	}
 
 	inline void process_char(const char c, Parser_phase& phase, Parser_phase& prev_phase,
-		const vector<Transition> transitions, string& target, Validator validate) {
+		const vector<Transition>& transitions, string& target, Validator validate) {
 		for (const auto& t : transitions) {
 			if (c == get<0>(t)) {
 				prev_phase = phase;
@@ -161,24 +161,4 @@ namespace version {
 			throw Parse_error(ex.what());
 		}
 	}
-
-	ostream& operator<<(ostream& os, const Prerelease_identifier& id) {
-		os << id.first << "<" << static_cast<int>(id.second) << ">";
-		return os;
-	}
-
-	ostream& operator<<(ostream& os, const Prerelease_identifiers& ids) {
-		for (const auto& id : ids) {
-			os << id << ",";
-		}
-		return os;
-	}
-
-	ostream& operator<<(ostream& os, const Build_identifiers& ids) {
-		for (const auto& id : ids) {
-			os << id << ",";
-		}
-		return os;
-	}
-
 }

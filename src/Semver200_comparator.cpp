@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <algorithm>
 #include "version.h"
 
 using namespace std;
@@ -30,7 +31,17 @@ namespace {
 
 	using namespace version;
 
-	int compare_prerel_identifiers(const Prerelease_identifier& l, Prerelease_identifier& r) {
+	int compare_normal(const Version_data& l, const Version_data& r) {
+		if (l.major > r.major) return 1;
+		if (l.major < r.major) return -1;
+		if (l.minor > r.minor) return 1;
+		if (l.minor < r.minor) return -1;
+		if (l.patch > r.patch) return 1;
+		if (l.patch < r.patch) return -1;
+		return 0;
+	}
+
+	int compare_prerel_identifiers(const Prerelease_identifier& l, const Prerelease_identifier& r) {
 		if (l.second == Identifier_type::alnum && r.second == Identifier_type::alnum) {
 			return l.first.compare(r.first);
 		} else if (l.second == Identifier_type::alnum && r.second == Identifier_type::num) {
@@ -43,7 +54,7 @@ namespace {
 			if (li == ri) return 0;
 			return li > ri ? 1 : -1;
 		}
-		throw runtime_error("unexpected identifier types: " + to_string(static_cast<int>(l.second)) + ", " +
+		throw logic_error("unexpected identifier types: " + to_string(static_cast<int>(l.second)) + ", " +
 			to_string(static_cast<int>(r.second)));
 	}
 }
@@ -51,29 +62,23 @@ namespace {
 namespace version {
 
 	int Semver200_comparator::compare(const Version_data& l, const Version_data& r) {
-		if (l.major > r.major) return 1;
-		if (l.major < r.major) return -1;
-
-		if (l.minor > r.minor) return 1;
-		if (l.minor < r.minor) return -1;
-
-		if (l.patch > r.patch) return 1;
-		if (l.patch < r.patch) return -1;
+		int cmp = compare_normal(l, r);
+		if (cmp != 0) return cmp;
 
 		// release version is always higher than prerelease
 		if (l.prerelease_ids.empty() && !r.prerelease_ids.empty()) return 1;
 		if (r.prerelease_ids.empty() && !l.prerelease_ids.empty()) return -1;
 
-		// compare release by looking at each identifier: numeric ones are compared as numbers, alphanum as ASCII strings
-		auto shorter = l.prerelease_ids.size() <= r.prerelease_ids.size() ? l.prerelease_ids.size() : r.prerelease_ids.size();
+		// compare release by looking at each identifier: numeric ones are compared as numbers,
+		// alphanum as ASCII strings
+		auto shorter = min(l.prerelease_ids.size(), r.prerelease_ids.size());
 		for (size_t i = 0; i < shorter; i++) {
-			auto lid = l.prerelease_ids[i];
-			auto rid = r.prerelease_ids[i];
-			int cmp = compare_prerel_identifiers(lid, rid);
+			cmp = compare_prerel_identifiers(l.prerelease_ids[i], r.prerelease_ids[i]);
 			if (cmp != 0) return cmp;
 		}
+
 		// prerels are the same, to the length of the shorter one;
-		// if they are the same length, then version are equal, otherwise, longer wins
+		// if they are the same length, then versions are equal, otherwise, longer wins
 		if (l.prerelease_ids.size() == r.prerelease_ids.size()) return 0;
 		return l.prerelease_ids.size() > r.prerelease_ids.size() ? 1 : -1;
 	}
