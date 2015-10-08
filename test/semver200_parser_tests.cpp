@@ -24,234 +24,109 @@ SOFTWARE.
 
 #define BOOST_TEST_MODULE semver200_parser_tests
 
-#include <boost/test/unit_test.hpp>
-#include "version.h"
+#include "semver200_parser_util.h"
 
 using namespace version;
+using namespace std;
 
-Version_data parse(const std::string& s) {
-	Semver200_parser p;
-	return p.parse(s);
+// normal must have major, minor and patch version
+BOOST_AUTO_TEST_CASE(parse_normal_ids) {
+	CHECK_NORMALS("0.0.0", 0, 0, 0);
+	CHECK_PARSE_ERROR("1");
+	CHECK_PARSE_ERROR("1.1");
 }
 
-BOOST_AUTO_TEST_CASE(parse_normal) {
-	auto r = parse("1.0.0");
-	BOOST_CHECK_EQUAL(r.major, 1);
-	BOOST_CHECK_EQUAL(r.minor, 0);
-	BOOST_CHECK_EQUAL(r.patch, 0);
-	BOOST_CHECK_EQUAL(r.release, "");
-	BOOST_CHECK_EQUAL(r.build, "");
+// normal versions must be non negative integers
+BOOST_AUTO_TEST_CASE(parse_normal_positive_ints) {
+	CHECK_NORMALS("1.2.3", 1, 2, 3);
+	CHECK_NORMALS("65535.65534.65533", 65535, 65534, 65533);
+	CHECK_PARSE_ERROR("-1.0.0");
+	CHECK_PARSE_ERROR("1.-1.0");
+	CHECK_PARSE_ERROR("1.1.-1");
+	CHECK_PARSE_ERROR("a.0.0");
+	CHECK_PARSE_ERROR("1.a.0");
+	CHECK_PARSE_ERROR("1.0.a");
 }
 
-BOOST_AUTO_TEST_CASE(parse_normal_bad_format_1) {
-	BOOST_CHECK_THROW(parse("bad.version"), Parse_error);
+// normal versions must not have leading 0
+BOOST_AUTO_TEST_CASE(parse_normal_leading_0) {
+	CHECK_PARSE_ERROR("01.0.0");
+	CHECK_PARSE_ERROR("1.01.0");
+	CHECK_PARSE_ERROR("1.0.01");
 }
 
-BOOST_AUTO_TEST_CASE(parse_normal_bad_format_2) {
-	BOOST_CHECK_THROW(parse("1.2.3.4"), Parse_error);
+// prerel contains one or more dot-separated ids with distinct numeric and mixed ids
+BOOST_AUTO_TEST_CASE(parse_prerel_ids_types) {
+	CHECK_PREREL("1.2.3-test", 1, 2, 3, Prerelease_identifiers({ {"test", A} }));
+	CHECK_PREREL("1.2.3-321", 1, 2, 3, Prerelease_identifiers({ {"321", N} }));
+	CHECK_PREREL("1.2.3-test.1", 1, 2, 3, Prerelease_identifiers({ {"test", A},{"1",N} }));
+	CHECK_PREREL("1.2.3-1.test", 1, 2, 3, Prerelease_identifiers({ {"1", N},{"test", A} }));
+	CHECK_PREREL("1.2.3-test.123456", 1, 2, 3, Prerelease_identifiers({ {"test", A},{"123456", N} }));
+	CHECK_PREREL("1.2.3-123456.test", 1, 2, 3, Prerelease_identifiers({ {"123456", N},{"test", A} }));
+	CHECK_PREREL("1.2.3-1.a.22.bb.333.ccc.4444.dddd.55555.fffff", 1, 2, 3, Prerelease_identifiers({ {"1", N},{"a", A},
+	{"22", N},{"bb", A},{"333", N },{"ccc", A} ,{"4444", N},{"dddd", A} ,{"55555", N},{"fffff", A} }));
 }
 
-BOOST_AUTO_TEST_CASE(parse_prerel_single) {
-	auto r = parse("1.0.0-prerelease");
-	BOOST_CHECK_EQUAL(r.major, 1);
-	BOOST_CHECK_EQUAL(r.minor, 0);
-	BOOST_CHECK_EQUAL(r.patch, 0);
-	BOOST_CHECK_EQUAL(r.release, "prerelease");
-	BOOST_CHECK_EQUAL(r.build, "");
+// prerel ids contain only alphanumerics and hyphen
+BOOST_AUTO_TEST_CASE(parse_prerel_legal_chars) {
+	CHECK_PREREL("1.2.3-test-1-2-3-CAP", 1, 2, 3, Prerelease_identifiers({ { "test-1-2-3-CAP", A } }));
+	CHECK_PARSE_ERROR("1.2.3-test#1");
+	CHECK_PARSE_ERROR("1.2.3-test.©2015");
+	CHECK_PARSE_ERROR("1.2.3-????-????-1");
 }
 
-BOOST_AUTO_TEST_CASE(parse_prerel_ok_multiple_1) {
-	auto r = parse("1.0.0-prerelease.rel-1");
-	BOOST_CHECK_EQUAL(r.major, 1);
-	BOOST_CHECK_EQUAL(r.minor, 0);
-	BOOST_CHECK_EQUAL(r.patch, 0);
-	BOOST_CHECK_EQUAL(r.release, "prerelease.rel-1");
-	BOOST_CHECK_EQUAL(r.build, "");
+// prerel ids may not be empty
+BOOST_AUTO_TEST_CASE(parse_prerel_empty_ids) {
+	CHECK_PARSE_ERROR("1.2.3-");
+	CHECK_PARSE_ERROR("1.2.3-test.");
+	CHECK_PARSE_ERROR("1.2.3-test..");
+	CHECK_PARSE_ERROR("1.2.3-test..1");
 }
 
-BOOST_AUTO_TEST_CASE(parse_prerel_ok_multiple_2) {
-	auto r = parse("1.0.0-prerelease.rel-1.b.c.f");
-	BOOST_CHECK_EQUAL(r.major, 1);
-	BOOST_CHECK_EQUAL(r.minor, 0);
-	BOOST_CHECK_EQUAL(r.patch, 0);
-	BOOST_CHECK_EQUAL(r.release, "prerelease.rel-1.b.c.f");
-	BOOST_CHECK_EQUAL(r.build, "");
+// prerel numeric ids must not have leading 0
+BOOST_AUTO_TEST_CASE(parse_prerel_num_ids_no_leading_0) {
+	CHECK_PARSE_ERROR("1.2.3-01");
+	CHECK_PARSE_ERROR("1.2.3-test.0023");
+	CHECK_PREREL("1.2.3-test.01a", 1, 2, 3, Prerelease_identifiers({ { "test", A },{ "01a", A } }));
+	CHECK_PREREL("1.2.3-test.01-s", 1, 2, 3, Prerelease_identifiers({ { "test", A },{ "01-s", A } }));
 }
 
-BOOST_AUTO_TEST_CASE(parse_normal_build_single) {
-	auto r = parse("1.0.0+test");
-	BOOST_CHECK_EQUAL(r.major, 1);
-	BOOST_CHECK_EQUAL(r.minor, 0);
-	BOOST_CHECK_EQUAL(r.patch, 0);
-	BOOST_CHECK_EQUAL(r.release, "");
-	BOOST_CHECK_EQUAL(r.build, "test");
+// build contains one or more dot separated ids
+BOOST_AUTO_TEST_CASE(parse_build_ids) {
+	CHECK_BUILD("1.2.3+test", 1, 2, 3, Build_identifiers({ "test" }));
+	CHECK_BUILD("1.2.3+321", 1, 2, 3, Build_identifiers({ "321" }));
+	CHECK_BUILD("1.2.3+test.1", 1, 2, 3, Build_identifiers({ "test","1" }));
+	CHECK_BUILD("1.2.3+1.test", 1, 2, 3, Build_identifiers({ "1","test" }));
+	CHECK_BUILD("1.2.3+test.123456", 1, 2, 3, Build_identifiers({ "test","123456" }));
+	CHECK_BUILD("1.2.3+123456.test", 1, 2, 3, Build_identifiers({ "123456","test" }));
+	CHECK_BUILD("1.2.3+1.a.22.bb.333.ccc.4444.dddd.55555.fffff", 1, 2, 3, Build_identifiers({ "1","a","22","bb",
+		"333","ccc","4444","dddd","55555","fffff" }));
 }
 
-BOOST_AUTO_TEST_CASE(parse_normal_build_multiple) {
-	auto r = parse("1.0.0+test.123.4.5");
-	BOOST_CHECK_EQUAL(r.major, 1);
-	BOOST_CHECK_EQUAL(r.minor, 0);
-	BOOST_CHECK_EQUAL(r.patch, 0);
-	BOOST_CHECK_EQUAL(r.release, "");
-	BOOST_CHECK_EQUAL(r.build, "test.123.4.5");
+// build ids contain only alphanumerics and hyphen
+BOOST_AUTO_TEST_CASE(parse_build_legal_chars) {
+	CHECK_BUILD("1.2.3+test-1-2-3-CAP", 1, 2, 3, Build_identifiers({ "test-1-2-3-CAP" }));
+	CHECK_PARSE_ERROR("1.2.3+test#1");
+	CHECK_PARSE_ERROR("1.2.3+test.©2015");
+	CHECK_PARSE_ERROR("1.2.3+????-????-1");
 }
 
-BOOST_AUTO_TEST_CASE(parse_normal_prerel_single_build_single) {
-	auto r = parse("1.0.0-prerel+test");
-	BOOST_CHECK_EQUAL(r.major, 1);
-	BOOST_CHECK_EQUAL(r.minor, 0);
-	BOOST_CHECK_EQUAL(r.patch, 0);
-	BOOST_CHECK_EQUAL(r.release, "prerel");
-	BOOST_CHECK_EQUAL(r.build, "test");
+// build ids may not be empty
+BOOST_AUTO_TEST_CASE(parse_build_empty_ids) {
+	CHECK_PARSE_ERROR("1.2.3+");
+	CHECK_PARSE_ERROR("1.2.3+test.");
+	CHECK_PARSE_ERROR("1.2.3+test..");
+	CHECK_PARSE_ERROR("1.2.3+test..1");
 }
 
-BOOST_AUTO_TEST_CASE(parse_normal_prerel_single_build_multiple) {
-	auto r = parse("1.0.0-prerel+test.1.2.3");
-	BOOST_CHECK_EQUAL(r.major, 1);
-	BOOST_CHECK_EQUAL(r.minor, 0);
-	BOOST_CHECK_EQUAL(r.patch, 0);
-	BOOST_CHECK_EQUAL(r.release, "prerel");
-	BOOST_CHECK_EQUAL(r.build, "test.1.2.3");
+// optional prerel must come after patch and build after prerel
+BOOST_AUTO_TEST_CASE(parse_prerel_build_order) {
+	CHECK_PREREL_BUILD("1.2.3-r4+b5", 1, 2, 3, Prerelease_identifiers({ {"r4",A} }), Build_identifiers({ "b5" }));
+	CHECK_PREREL_BUILD("1.2.3+b4-r5",1,2,3, no_rel_ids, Build_identifiers({ "b4-r5" }));
 }
 
-BOOST_AUTO_TEST_CASE(parse_normal_prerel_multiple_build_single) {
-	auto r = parse("1.0.0-prerel.1.2.3+test");
-	BOOST_CHECK_EQUAL(r.major, 1);
-	BOOST_CHECK_EQUAL(r.minor, 0);
-	BOOST_CHECK_EQUAL(r.patch, 0);
-	BOOST_CHECK_EQUAL(r.release, "prerel.1.2.3");
-	BOOST_CHECK_EQUAL(r.build, "test");
-}
-
-BOOST_AUTO_TEST_CASE(parse_normal_prerel_multiple_build_multiple) {
-	auto r = parse("1.0.0-prerel.1.2.3+test.1.2.3");
-	BOOST_CHECK_EQUAL(r.major, 1);
-	BOOST_CHECK_EQUAL(r.minor, 0);
-	BOOST_CHECK_EQUAL(r.patch, 0);
-	BOOST_CHECK_EQUAL(r.release, "prerel.1.2.3");
-	BOOST_CHECK_EQUAL(r.build, "test.1.2.3");
-}
-
-BOOST_AUTO_TEST_CASE(parse_normal_all_empty) {
-	BOOST_CHECK_THROW(parse(".."), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_normal_major_empty) {
-	BOOST_CHECK_THROW(parse(".0.0"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_normal_minor_empty) {
-	BOOST_CHECK_THROW(parse("1..0"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_normal_patch_empty) {
-	BOOST_CHECK_THROW(parse("1.1."), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_normal_major_with_letters) {
-	BOOST_CHECK_THROW(parse("1a.0.0"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_normal_minor_with_letters) {
-	BOOST_CHECK_THROW(parse("1.0a.0"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_normal_patch_with_letters) {
-	BOOST_CHECK_THROW(parse("1.0.0a"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_normal_major_leading_0) {
-	BOOST_CHECK_THROW(parse("01.0.0"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_normal_minor_leading_0) {
-	BOOST_CHECK_THROW(parse("1.00.0"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_normal_patch_leading_0) {
-	BOOST_CHECK_THROW(parse("1.0.00"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_normal_major_negative) {
-	BOOST_CHECK_THROW(parse("-1.0.0"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_normal_minor_negative) {
-	BOOST_CHECK_THROW(parse("1.-1.0"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_normal_patch_negative) {
-	BOOST_CHECK_THROW(parse("1.0.-1"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_prerel_multiple) {
-	BOOST_CHECK_NO_THROW(parse("1.0.0-pre-rel.123.test.deadbeef.31415"));
-}
-
-BOOST_AUTO_TEST_CASE(parse_prerel_invalid_chars) {
-	BOOST_CHECK_THROW(parse("1.0.0-prerelease#1"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_prerel_empty_id) {
-	BOOST_CHECK_THROW(parse("1.0.0-prerel..test"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_prerel_num_with_leading_0) {
-	BOOST_CHECK_THROW(parse("1.0.0-prerel.01"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_build_single_id) {
-	BOOST_CHECK_NO_THROW(parse("1.0.0+build"));
-}
-
-BOOST_AUTO_TEST_CASE(parse_build_multiple_id) {
-	BOOST_CHECK_NO_THROW(parse("1.0.0+build.123.test.deadbeef.31415"));
-}
-
-BOOST_AUTO_TEST_CASE(parse_build_invalid_chars) {
-	BOOST_CHECK_THROW(parse("1.0.0+build#1"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_build_empty_id) {
-	BOOST_CHECK_THROW(parse("1.0.0+build..test"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_prerel_single_build_single) {
-	BOOST_CHECK_NO_THROW(parse("1.0.0-prerelease+build"));
-}
-
-BOOST_AUTO_TEST_CASE(parse_prerel_multiple_build_single) {
-	BOOST_CHECK_NO_THROW(parse("1.0.0-pre-rel.123.test.deadbeef.31415+build"));
-}
-
-BOOST_AUTO_TEST_CASE(parse_prerel_invalid_chars_build_single) {
-	BOOST_CHECK_THROW(parse("1.0.0-prerelease#1+build"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_prerel_empty_id_build_single) {
-	BOOST_CHECK_THROW(parse("1.0.0-prerel..test+build"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_prerel_num_with_leading_0_build_single) {
-	BOOST_CHECK_THROW(parse("1.0.0-prerel.01+build"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_prerel_single_build_multiple) {
-	BOOST_CHECK_NO_THROW(parse("1.0.0-prerelease+build.1.2.3"));
-}
-
-BOOST_AUTO_TEST_CASE(parse_prerel_multiple_build_multiple) {
-	BOOST_CHECK_NO_THROW(parse("1.0.0-pre-rel.123.test.deadbeef.31415+build.1.2.3"));
-}
-
-BOOST_AUTO_TEST_CASE(parse_prerel_invalid_chars_build_multiple) {
-	BOOST_CHECK_THROW(parse("1.0.0-prerelease#1+build.1.2.3"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_prerel_empty_id_build_multiple) {
-	BOOST_CHECK_THROW(parse("1.0.0-prerel..test+build.1.2.3"), Parse_error);
-}
-
-BOOST_AUTO_TEST_CASE(parse_prerel_num_with_leading_0_build_multiple) {
-	BOOST_CHECK_THROW(parse("1.0.0-prerel.01+build.1.2.3"), Parse_error);
+// check some corner cases
+BOOST_AUTO_TEST_CASE(parse_corner_cases) {
+	CHECK_PARSE_ERROR("1.2.3-r4.+b5");
+	CHECK_PARSE_ERROR("1.2.3-r4+b5.");
 }

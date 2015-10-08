@@ -3,5 +3,5 @@ include_directories(
 )
 
 add_library(semver
-	version.cpp
+	Semver200_parser.cpp Semver200_comparator.cpp
 )
