@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 2.8)
 project(semver)
 set(VERSION_MAJOR   "0")
 set(VERSION_MINOR   "1")
@@ -19,7 +19,7 @@ endif()
 
 if(UNIX)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wextra -pedantic")
-	add_definitions(-std=c++14)
+	add_definitions(-std=c++11)
 endif()
 
 if(WIN32)

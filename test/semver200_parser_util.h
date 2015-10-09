@@ -35,9 +35,14 @@ const version::Build_identifiers no_build_ids;
 #define N Identifier_type::num
 #define A Identifier_type::alnum
 
+#define BOOST_PATCH BOOST_VERSION % 100
+#define BOOST_MINOR BOOST_VERSION / 100 % 1000
+#define BOOST_MAJOR BOOST_VERSION / 100000
+
 namespace boost {
 	namespace test_tools {
 		namespace tt_detail {
+#if BOOST_MAJOR == 1 && BOOST_MINOR < 56
 			template<>
 			void print_log_value<version::Build_identifiers>::operator()(std::ostream& os,
 				const version::Build_identifiers& ids) {
@@ -53,6 +58,24 @@ namespace boost {
 					os << id.first << "|" << static_cast<int>(id.second) << "|" << ",";
 				}
 			}
+#else
+
+			template<>
+			inline std::ostream& operator<<(std::ostream& os, const print_helper_t<version::Build_identifiers>& ph) {
+				for (const auto& id: ph.m_t) {
+					os << id << ",";
+				}
+				return os;
+			}
+
+			template<>
+			inline std::ostream& operator<<(std::ostream& os, const print_helper_t<version::Prerelease_identifiers>& ph) {
+				for (const auto& id : ph.m_t) {
+					os << id.first << "|" << static_cast<int>(id.second) << "|" << ",";
+				}
+				return os;
+			}
+#endif
 		}
 	}
 }

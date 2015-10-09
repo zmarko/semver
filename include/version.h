@@ -24,7 +24,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <iosfwd>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -86,7 +86,7 @@ namespace version {
 	public:
 		/// Construct Basic_version object using Parser to parse version string and Comparator for comparison.
 		Basic_version(const std::string& v, Parser p, Comparator c)
-			: parser_{ p }, comparator_{ c }, ver_{ parser_.parse(v) } {};
+			: parser_(p), comparator_(c), ver_(parser_.parse(v)) {};
 
 		/// Compare if left version object is less than the right.
 		friend bool operator<(const Basic_version& l, const Basic_version& r) {
@@ -101,14 +101,14 @@ namespace version {
 			os << v.ver_.major << "." << v.ver_.minor << "." << v.ver_.patch;
 			if (!v.ver_.prerelease_ids.empty()) {
 				os << "-";
-				for (auto& it = v.ver_.prerelease_ids.cbegin(); it < v.ver_.prerelease_ids.cend() - 1; ++it) {
+				for (auto it = v.ver_.prerelease_ids.cbegin(); it < v.ver_.prerelease_ids.cend() - 1; ++it) {
 					os << it->first << ".";
 				}
 				os << v.ver_.prerelease_ids.crbegin()->first;
 			}
 			if (!v.ver_.build_ids.empty()) {
 				os << "+";
-				for (auto& it = v.ver_.build_ids.cbegin(); it < v.ver_.build_ids.cend() - 1; ++it) {
+				for (auto it = v.ver_.build_ids.cbegin(); it < v.ver_.build_ids.cend() - 1; ++it) {
 					os << *it << ".";
 				}
 				os << *v.ver_.build_ids.crbegin();

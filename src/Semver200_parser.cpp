@@ -75,7 +75,7 @@ namespace {
 	}
 
 	/// Validate prerelease and build version components.
-	inline void prerelease_version_validator(const string& tgt, const char c) {
+	inline void prerelease_version_validator(const string&, const char c) {
 		if ((c < '0' || c > '9') && (c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && c != '.' && c != '-')
 			throw version::Parse_error("invalid character encountered: " + string(1, c));
 	}
@@ -101,7 +101,7 @@ namespace {
 		}
 		prerelease.push_back(Prerelease_identifier(id, t));
 		id.clear();
-	};
+	}
 
 	/// Validate every individual build identifier and add it to collection.
 	void build_hook_impl(string& id, Parser_state& pstate, version::Build_identifiers& build,
@@ -111,7 +111,7 @@ namespace {
 		if (id.empty()) throw version::Parse_error("version identifier cannot be empty");
 		build.push_back(id);
 		id.clear();
-	};
+	}
 
 
 }

@@ -43,7 +43,9 @@ namespace {
 
 	int compare_prerel_identifiers(const Prerelease_identifier& l, const Prerelease_identifier& r) {
 		if (l.second == Identifier_type::alnum && r.second == Identifier_type::alnum) {
-			return l.first.compare(r.first);
+			auto cmp = l.first.compare(r.first);
+			if (cmp == 0) return cmp;
+			return cmp > 0 ? 1 : -1;
 		} else if (l.second == Identifier_type::alnum && r.second == Identifier_type::num) {
 			return 1;
 		} else if (l.second == Identifier_type::num && r.second == Identifier_type::alnum) {

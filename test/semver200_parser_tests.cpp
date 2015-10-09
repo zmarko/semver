@@ -71,8 +71,8 @@ BOOST_AUTO_TEST_CASE(parse_prerel_ids_types) {
 BOOST_AUTO_TEST_CASE(parse_prerel_legal_chars) {
 	CHECK_PREREL("1.2.3-test-1-2-3-CAP", 1, 2, 3, Prerelease_identifiers({ { "test-1-2-3-CAP", A } }));
 	CHECK_PARSE_ERROR("1.2.3-test#1");
-	CHECK_PARSE_ERROR("1.2.3-test.�2015");
-	CHECK_PARSE_ERROR("1.2.3-????-????-1");
+	CHECK_PARSE_ERROR("1.2.3-test.©2015");
+	CHECK_PARSE_ERROR("1.2.3-ћирилица-1");
 }
 
 // prerel ids may not be empty
@@ -107,8 +107,8 @@ BOOST_AUTO_TEST_CASE(parse_build_ids) {
 BOOST_AUTO_TEST_CASE(parse_build_legal_chars) {
 	CHECK_BUILD("1.2.3+test-1-2-3-CAP", 1, 2, 3, Build_identifiers({ "test-1-2-3-CAP" }));
 	CHECK_PARSE_ERROR("1.2.3+test#1");
-	CHECK_PARSE_ERROR("1.2.3+test.�2015");
-	CHECK_PARSE_ERROR("1.2.3+????-????-1");
+	CHECK_PARSE_ERROR("1.2.3+test.©2015");
+	CHECK_PARSE_ERROR("1.2.3+ћирилица-1");
 }
 
 // build ids may not be empty
