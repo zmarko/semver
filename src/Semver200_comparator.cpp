@@ -67,7 +67,7 @@ namespace version {
 		int cmp = compare_normal(l, r);
 		if (cmp != 0) return cmp;
 
-		// prerelease version is always higher than prerelease
+		// release version is always higher than prerelease
 		if (l.prerelease_ids.empty() && !r.prerelease_ids.empty()) return 1;
 		if (r.prerelease_ids.empty() && !l.prerelease_ids.empty()) return -1;
 
