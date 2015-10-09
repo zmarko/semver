@@ -35,23 +35,28 @@ namespace {
 
 	using Validator = function<void(const string&, const char)>;
 	using State_transition_hook = function<void(string&)>;
-	/// State transition is described by a character that triggers it, a cstate to transition to and
+	/// State transition is described by a character that triggers it, a state to transition to and
 	/// optional hook to be invoked on transition.
 	using Transition = tuple<const char, Parser_state, State_transition_hook>;
 	using Transitions = vector<Transition>;
 	using State = tuple<Transitions, string&, Validator>;
 	using State_machine = map<Parser_state, State>;
 
+	// Ranges of characters allowed in prerelease and build identifiers.
+	const vector<pair<char, char>> allowed_prerel_id_chars = {
+		{ '0', '9' },{ 'A','Z' },{ 'a','z' },{ '.','.' },{ '-','-' }
+	};
+
 	inline Transition mkx(const char c, Parser_state p, State_transition_hook pth) {
 		return make_tuple(c, p, pth);
 	}
 
-	/// Advance parser cstate machine by a single step.
+	/// Advance parser state machine by a single step.
 	/**
-	Perform single step of parser cstate machine: if character matches one from transition tables -
-	trigger transition to next cstate; otherwise, validate if current token is in legal cstate
+	Perform single step of parser state machine: if character matches one from transition tables -
+	trigger transition to next state; otherwise, validate if current token is in legal state
 	(throw Parse_error if not) and then add character to current token; State transition includes
-	preparing various vars for next cstate and invoking cstate transition hook (if specified) which is
+	preparing various vars for next state and invoking state transition hook (if specified) which is
 	where whole tokens are validated.
 	*/
 	inline void process_char(const char c, Parser_state& cstate, Parser_state& pstate,
@@ -74,9 +79,13 @@ namespace {
 		if (tgt.compare(0, 1, "0") == 0) throw version::Parse_error("leading 0 not allowed");
 	}
 
-	/// Validate prerelease and build version components.
+	/// Validate that prerelease and build version identifiers are comprised of allowed chars only.
 	inline void prerelease_version_validator(const string&, const char c) {
-		if ((c < '0' || c > '9') && (c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && c != '.' && c != '-')
+		bool res = false;
+		for (const auto& r : allowed_prerel_id_chars) {
+			res |= (c >= r.first && c <= r.second);
+		}
+		if (!res)
 			throw version::Parse_error("invalid character encountered: " + string(1, c));
 	}
 
@@ -112,7 +121,6 @@ namespace {
 		build.push_back(id);
 		id.clear();
 	}
-
 
 }
 

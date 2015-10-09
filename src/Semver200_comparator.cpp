@@ -23,6 +23,8 @@ SOFTWARE.
 */
 
 #include <algorithm>
+#include <functional>
+#include <map>
 #include "version.h"
 
 using namespace std;
@@ -31,6 +33,7 @@ namespace {
 
 	using namespace version;
 
+	// Compare normal version identifiers.
 	int compare_normal(const Version_data& l, const Version_data& r) {
 		if (l.major > r.major) return 1;
 		if (l.major < r.major) return -1;
@@ -41,46 +44,67 @@ namespace {
 		return 0;
 	}
 
-	int compare_prerel_identifiers(const Prerelease_identifier& l, const Prerelease_identifier& r) {
-		if (l.second == Identifier_type::alnum && r.second == Identifier_type::alnum) {
-			auto cmp = l.first.compare(r.first);
-			if (cmp == 0) return cmp;
+	// Compare alphanumeric prerelease identifiers.
+	inline int cmp_alnum_prerel_ids(const string& l, const string& r) {
+		auto cmp = l.compare(r);
+		if (cmp == 0) {
+			return cmp;
+		} else {
 			return cmp > 0 ? 1 : -1;
-		} else if (l.second == Identifier_type::alnum && r.second == Identifier_type::num) {
-			return 1;
-		} else if (l.second == Identifier_type::num && r.second == Identifier_type::alnum) {
-			return -1;
-		} else if (l.second == Identifier_type::num && r.second == Identifier_type::num) {
-			int li = stoi(l.first);
-			int ri = stoi(r.first);
-			if (li == ri) return 0;
-			return li > ri ? 1 : -1;
 		}
-		throw logic_error("unexpected identifier types: " + to_string(static_cast<int>(l.second)) + ", " +
-			to_string(static_cast<int>(r.second)));
+	}
+
+	// Compare numeric prerelease identifiers.
+	inline int cmp_num_prerel_ids(const string& l, const string& r) {
+		int li = stoi(l);
+		int ri = stoi(r);
+		if (li == ri) return 0;
+		return li > ri ? 1 : -1;
+	}
+
+	using Prerel_types = pair<Identifier_type, Identifier_type>;
+	using Prerel_id_comparator = function<int(const string&, const string&)>;
+	const map<Prerel_types, Prerel_id_comparator> comparators = {
+		{ { Identifier_type::alnum, Identifier_type::alnum }, cmp_alnum_prerel_ids },
+		{ { Identifier_type::alnum, Identifier_type::num }, [](const string&, const string&) {return 1;} },
+		{ { Identifier_type::num, Identifier_type::alnum }, [](const string&, const string&) {return -1;} },
+		{ { Identifier_type::num, Identifier_type::num }, cmp_num_prerel_ids }
+	};
+
+	// Compare prerelease identifiers based on their types.
+	int compare_prerel_identifiers(const Prerelease_identifier& l, const Prerelease_identifier& r) {
+		auto cmp = comparators.at({ l.second, r.second });
+		return cmp(l.first, r.first);
+	}
+
+	inline int cmp_rel_prerel(const Prerelease_identifiers& l, const Prerelease_identifiers& r) {
+		if (l.empty() && !r.empty()) return 1;
+		if (r.empty() && !l.empty()) return -1;
+		return 0;
 	}
 }
 
 namespace version {
 
 	int Semver200_comparator::compare(const Version_data& l, const Version_data& r) const {
+		// Compare normal version components.
 		int cmp = compare_normal(l, r);
 		if (cmp != 0) return cmp;
 
-		// release version is always higher than prerelease
-		if (l.prerelease_ids.empty() && !r.prerelease_ids.empty()) return 1;
-		if (r.prerelease_ids.empty() && !l.prerelease_ids.empty()) return -1;
+		// Compare if one version is release and the other prerelease; release is always higher than prerelease.
+		cmp = cmp_rel_prerel(l.prerelease_ids, r.prerelease_ids);
+		if (cmp != 0) return cmp;
 
-		// compare prerelease by looking at each identifier: numeric ones are compared as numbers,
-		// alphanum as ASCII strings
+		// Compare prerelease by looking at each identifier: numeric ones are compared as numbers,
+		// alphanum as ASCII strings.
 		auto shorter = min(l.prerelease_ids.size(), r.prerelease_ids.size());
 		for (size_t i = 0; i < shorter; i++) {
 			cmp = compare_prerel_identifiers(l.prerelease_ids[i], r.prerelease_ids[i]);
 			if (cmp != 0) return cmp;
 		}
 
-		// prerels are the same, to the length of the shorter one;
-		// if they are the same length, then versions are equal, otherwise, longer wins
+		// Prerelease identifiers are the same, to the length of the shorter version string;
+		// if they are the same length, then versions are equal, otherwise, longer one wins.
 		if (l.prerelease_ids.size() == r.prerelease_ids.size()) return 0;
 		return l.prerelease_ids.size() > r.prerelease_ids.size() ? 1 : -1;
 	}
