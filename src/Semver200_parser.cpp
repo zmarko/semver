@@ -44,7 +44,7 @@ namespace {
 
 	// Ranges of characters allowed in prerelease and build identifiers.
 	const vector<pair<char, char>> allowed_prerel_id_chars = {
-		{ '0', '9' },{ 'A','Z' },{ 'a','z' },{ '.','.' },{ '-','-' }
+			{ '0', '9' },{ 'A','Z' },{ 'a','z' },{ '-','-' }
 	};
 
 	inline Transition mkx(const char c, Parser_state p, State_transition_hook pth) {
@@ -151,7 +151,7 @@ namespace version {
 			build_hook_impl(id, pstate, build, prerelease_id, prerelease);
 		};
 
-		// Phase transition tables
+		// State transition tables
 		auto major_trans = {
 			mkx('.', Parser_state::minor, {})
 		};
@@ -191,8 +191,7 @@ namespace version {
 		// triggered for it.
 		if (cstate == Parser_state::prerelease) {
 			prerelease_hook(prerelease_id);
-		}
-		if (cstate == Parser_state::build) {
+		} else if (cstate == Parser_state::build) {
 			build_hook(build_id);
 		}
 
