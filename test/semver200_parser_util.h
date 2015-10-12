@@ -26,7 +26,7 @@ SOFTWARE.
 
 #include <boost/test/unit_test.hpp>
 #include <ostream>
-#include "version.h"
+#include "semver200.h"
 
 version::Semver200_parser p;
 const version::Prerelease_identifiers no_rel_ids;

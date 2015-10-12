@@ -25,7 +25,7 @@ SOFTWARE.
 #define BOOST_TEST_MODULE semver200_version_tests
 
 #include <boost/test/unit_test.hpp>
-#include "version.h"
+#include "semver200.h"
 
 using namespace version;
 
@@ -54,6 +54,8 @@ BOOST_AUTO_TEST_CASE(test_relational_operators) {
 
 	BOOST_CHECK(v("1.0.0") >= v("1.0.0"));
 	BOOST_CHECK(v("1.0.0") >= v("0.0.9"));
+
+	BOOST_CHECK(v("2.0.0") > v("1.9.9"));
 }
 
 BOOST_AUTO_TEST_CASE(test_ostream_output) {
@@ -64,4 +66,13 @@ BOOST_AUTO_TEST_CASE(test_ostream_output) {
 	CHECK_RT("1.2.3-alpha+build.314");
 	CHECK_RT("1.2.3-alpha.1+build.314");
 	CHECK_RT("1.2.3-alpha.1.2.3+build.314");
+}
+
+BOOST_AUTO_TEST_CASE(test_accessors) {
+	auto p = v("1.2.3-pre.rel.1+test.build.321");
+	BOOST_CHECK_EQUAL(p.major(), 1);
+	BOOST_CHECK_EQUAL(p.minor(), 2);
+	BOOST_CHECK_EQUAL(p.patch(), 3);
+	BOOST_CHECK_EQUAL(p.prerelease(), "pre.rel.1");
+	BOOST_CHECK_EQUAL(p.build(), "test.build.321");
 }

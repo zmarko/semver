@@ -25,7 +25,7 @@ SOFTWARE.
 #define BOOST_TEST_MODULE semver200_comparator_tests
 
 #include <boost/test/unit_test.hpp>
-#include "version.h"
+#include "semver200.h"
 
 using namespace version;
 

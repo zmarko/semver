@@ -75,46 +75,45 @@ namespace version {
 		Build_identifiers build_ids;
 	};
 
+	/// Forward declaration required for operators' template declarations.
+	template<typename P, typename C>
+	class Basic_version;
+
+	/// Compare if left version object is less than the right.
+	template<typename P, typename C>
+	bool operator<(const Basic_version<P, C>&, const Basic_version<P, C>&);
+
+	/// Compare if two version objects are equal.
+	template<typename P, typename C>
+	bool operator==(const Basic_version<P, C>& l, const Basic_version<P, C>& r);
+
+	/// Output version object to stream using standard semver format (X.Y.Z-PR+B).
+	template<typename P, typename C>
+	std::ostream& operator<<(std::ostream& os, const Basic_version<P, C>& v);
+
+
 	/// Generic version description and comparison class.
 	/**
 	Basic_version class describes general version object without prescribing parsing,
-	validation and comparison rules. These rules are implemented by supplied Parser and
-	Comparator parameters.
+	validation and comparison rules. These rules are implemented by supplied P and
+	C parameters.
 	*/
 	template<typename Parser, typename Comparator>
 	class Basic_version {
 	public:
-		/// Construct Basic_version object using Parser to parse version string and Comparator for comparison.
+		/// Construct Basic_version object using P to parse version string and C for comparison.
 		Basic_version(const std::string& v, Parser p, Comparator c)
 			: parser_(p), comparator_(c), ver_(parser_.parse(v)) {};
 
-		/// Compare if left version object is less than the right.
-		friend bool operator<(const Basic_version& l, const Basic_version& r) {
-			return l.comparator_.compare(l.ver_, r.ver_) == -1;
-		}
-		/// Compare if two version objects are equal.
-		friend bool operator==(const Basic_version& l, const Basic_version& r) {
-			return l.comparator_.compare(l.ver_, r.ver_) == 0;
-		}
-		/// Output version object to stream using standard semver format (X.Y.Z-PR+B).
-		friend std::ostream& operator<<(std::ostream& os, const Basic_version& v) {
-			os << v.ver_.major << "." << v.ver_.minor << "." << v.ver_.patch;
-			if (!v.ver_.prerelease_ids.empty()) {
-				os << "-";
-				for (auto it = v.ver_.prerelease_ids.cbegin(); it < v.ver_.prerelease_ids.cend() - 1; ++it) {
-					os << it->first << ".";
-				}
-				os << v.ver_.prerelease_ids.crbegin()->first;
-			}
-			if (!v.ver_.build_ids.empty()) {
-				os << "+";
-				for (auto it = v.ver_.build_ids.cbegin(); it < v.ver_.build_ids.cend() - 1; ++it) {
-					os << *it << ".";
-				}
-				os << *v.ver_.build_ids.crbegin();
-			}
-			return os;
-		}
+		const int major() const;
+		const int minor() const;
+		const int patch() const;
+		const std::string prerelease() const;
+		const std::string build() const;
+
+		friend bool operator< <>(const Basic_version& l, const Basic_version& r);
+		friend bool operator== <>(const Basic_version& l, const Basic_version& r);
+		friend std::ostream& operator<< <>(std::ostream& os, const Basic_version& v);
 
 	private:
 		Parser parser_;
@@ -122,45 +121,22 @@ namespace version {
 		const Version_data ver_;
 	};
 
-	/// Parse string into Version_data structure according to semantic versioning 2.0.0 rules.
-	struct Semver200_parser {
-		Version_data parse(const std::string&) const;
-	};
-
-	/// Compare Version_data to another using semantic versioning 2.0.0 rules.
-	struct Semver200_comparator {
-		int compare(const Version_data&, const Version_data&) const;
-	};
-
-	/// Concrete version class that binds all semver 2.0.0 functionality together.
-	class Semver200_version : public Basic_version<Semver200_parser, Semver200_comparator> {
-	public:
-		Semver200_version(const std::string& v)
-			: Basic_version{ v, Semver200_parser(), Semver200_comparator() } {}
-	};
-
 	/// Compare if two version objects are different.
-	template<typename P, typename C>
-	inline bool operator!=(const Basic_version<P, C>& l, const Basic_version<P, C>& r) {
-		return !(l == r);
-	}
+	template<typename Parser, typename Comparator>
+	bool operator!=(const version::Basic_version<Parser, Comparator>& l, const version::Basic_version<Parser, Comparator>& r);
 
 	/// Compare if left version object is greater than the right.
-	template<typename P, typename C>
-	inline bool operator>(const Basic_version<P, C>& l, const Basic_version<P, C>& r) {
-		return r < l;
-	}
+	template<typename Parser, typename Comparator>
+	bool operator>(const version::Basic_version<Parser, Comparator>& l, const version::Basic_version<Parser, Comparator>& r);
 
 	/// Compare if left version object is greater than or equal the right.
-	template<typename P, typename C>
-	inline bool operator>=(const Basic_version<P, C>& l, const Basic_version<P, C>& r) {
-		return !(l < r);
-	}
+	template<typename Parser, typename Comparator>
+	bool operator>=(const version::Basic_version<Parser, Comparator>& l, const version::Basic_version<Parser, Comparator>& r);
 
 	/// Compare if left version object is less than or equal the right.
-	template<typename P, typename C>
-	inline bool operator<=(const Basic_version<P, C>& l, const Basic_version<P, C>& r) {
-		return !(l > r);
-	}
+	template<typename Parser, typename Comparator>
+	bool operator<=(const version::Basic_version<Parser, Comparator>& l, const version::Basic_version<Parser, Comparator>& r);
 
 }
+
+#include "version.inl"
