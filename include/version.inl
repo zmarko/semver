@@ -30,8 +30,8 @@ namespace version {
 
 	namespace {
 
-		/// Utility function to splice all vector elements to output stream, using designated separator and
-		/// function object for getting value from vector element.
+		/// Utility function to splice all vector elements to output stream, using designated separator 
+		/// between elements and function object for getting values from vector elements.
 		template<typename T, typename F>
 		std::ostream& splice(std::ostream& os, const std::vector<T>& v, const std::string& sep, F read) {
 			for (auto it = v.cbegin(); it < v.cend() - 1; ++it) {
@@ -85,13 +85,13 @@ namespace version {
 	template<typename P, typename C>
 	std::ostream& operator<<(std::ostream& os, const version::Basic_version<P, C>& v) {
 		os << v.ver_.major << "." << v.ver_.minor << "." << v.ver_.patch;
-		if (!v.ver_.prerelease_ids.empty()) {
-			os << "-";
-			splice(os, v.ver_.prerelease_ids, ".", [](const auto& id) { return id.first;});
+		std::string prl = v.prerelease();
+		if (!prl.empty()) {
+			os << "-" << prl;
 		}
-		if (!v.ver_.build_ids.empty()) {
-			os << "+";
-			splice(os, v.ver_.build_ids, ".", [](const auto& id) { return id;});
+		std::string bld = v.build();
+		if (!bld.empty()) {
+			os << "+" << bld;
 		}
 		return os;
 	}
