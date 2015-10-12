@@ -91,12 +91,28 @@ namespace version {
 	template<typename P, typename C>
 	std::ostream& operator<<(std::ostream& os, const Basic_version<P, C>& v);
 
+	/// Compare if two version objects are different.
+	template<typename P, typename C>
+	bool operator!=(const version::Basic_version<P, C>& l, const version::Basic_version<P, C>& r);
+
+	/// Compare if left version object is greater than the right.
+	template<typename P, typename C>
+	bool operator>(const version::Basic_version<P, C>& l, const version::Basic_version<P, C>& r);
+
+	/// Compare if left version object is greater than or equal the right.
+	template<typename P, typename C>
+	bool operator>=(const version::Basic_version<P, C>& l, const version::Basic_version<P, C>& r);
+
+	/// Compare if left version object is less than or equal the right.
+	template<typename P, typename C>
+	bool operator<=(const version::Basic_version<P, C>& l, const version::Basic_version<P, C>& r);
+
 
 	/// Generic version description and comparison class.
 	/**
 	Basic_version class describes general version object without prescribing parsing,
-	validation and comparison rules. These rules are implemented by supplied P and
-	C parameters.
+	validation and comparison rules. These rules are implemented by supplied Parser and
+	Comparator objects.
 	*/
 	template<typename Parser, typename Comparator>
 	class Basic_version {
@@ -120,23 +136,6 @@ namespace version {
 		Comparator comparator_;
 		const Version_data ver_;
 	};
-
-	/// Compare if two version objects are different.
-	template<typename Parser, typename Comparator>
-	bool operator!=(const version::Basic_version<Parser, Comparator>& l, const version::Basic_version<Parser, Comparator>& r);
-
-	/// Compare if left version object is greater than the right.
-	template<typename Parser, typename Comparator>
-	bool operator>(const version::Basic_version<Parser, Comparator>& l, const version::Basic_version<Parser, Comparator>& r);
-
-	/// Compare if left version object is greater than or equal the right.
-	template<typename Parser, typename Comparator>
-	bool operator>=(const version::Basic_version<Parser, Comparator>& l, const version::Basic_version<Parser, Comparator>& r);
-
-	/// Compare if left version object is less than or equal the right.
-	template<typename Parser, typename Comparator>
-	bool operator<=(const version::Basic_version<Parser, Comparator>& l, const version::Basic_version<Parser, Comparator>& r);
-
 }
 
 #include "version.inl"
