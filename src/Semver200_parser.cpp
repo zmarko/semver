@@ -106,7 +106,6 @@ namespace version {
 
 		/// Validate every individual prerelease identifier, determine it's type and add it to collection.
 		void prerelease_hook_impl(string& id, Prerelease_identifiers& prerelease) {
-			using namespace version;
 			if (id.empty()) throw Parse_error("version identifier cannot be empty");
 			Id_type t = Id_type::alnum;
 			if (is_identifier_numeric(id)) {
