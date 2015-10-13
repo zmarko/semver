@@ -25,7 +25,7 @@ SOFTWARE.
 #include <algorithm>
 #include <functional>
 #include <map>
-#include "semver200.h"
+#include "common/semver200.h"
 
 using namespace std;
 
@@ -56,8 +56,8 @@ namespace {
 
 	// Compare numeric prerelease identifiers.
 	inline int cmp_num_prerel_ids(const string& l, const string& r) {
-		int li = stoi(l);
-		int ri = stoi(r);
+		long long li = stoll(l);
+		long long ri = stoll(r);
 		if (li == ri) return 0;
 		return li > ri ? 1 : -1;
 	}

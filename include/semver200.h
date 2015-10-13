@@ -41,6 +41,9 @@ namespace version {
 	/// Concrete version class that binds all semver 2.0.0 functionality together.
 	class Semver200_version : public Basic_version<Semver200_parser, Semver200_comparator> {
 	public:
+		Semver200_version()
+			: Basic_version{ Semver200_parser(), Semver200_comparator() } {}
+
 		Semver200_version(const std::string& v)
 			: Basic_version{ v, Semver200_parser(), Semver200_comparator() } {}
 	};

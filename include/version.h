@@ -117,9 +117,17 @@ namespace version {
 	template<typename Parser, typename Comparator>
 	class Basic_version {
 	public:
+		/// Construct Basic_version object using P to parse default ("0.0.0") version string and C for comparison.
+		Basic_version(Parser p, Comparator c);
+
 		/// Construct Basic_version object using P to parse version string and C for comparison.
-		Basic_version(const std::string& v, Parser p, Comparator c)
-			: parser_(p), comparator_(c), ver_(parser_.parse(v)) {};
+		Basic_version(const std::string& v, Parser p, Comparator c);
+
+		/// Construct Basic_version by copying data from another one.
+		Basic_version(const Basic_version&);
+
+		/// Copy version data from another Basic_version to this one.
+		Basic_version& operator=(const Basic_version&);
 
 		const int major() const;
 		const int minor() const;
@@ -134,7 +142,7 @@ namespace version {
 	private:
 		Parser parser_;
 		Comparator comparator_;
-		const Version_data ver_;
+		Version_data ver_;
 	};
 }
 

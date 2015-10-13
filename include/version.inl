@@ -45,6 +45,20 @@ namespace version {
 	}
 
 	template<typename P, typename C>
+	Basic_version<P, C>::Basic_version(P p, C c)
+		: parser_(p), comparator_(c), ver_(parser_.parse("0.0.0")) {};
+
+	template<typename P, typename C>
+	Basic_version<P, C>::Basic_version(const std::string& v, P p, C c)
+		: parser_(p), comparator_(c), ver_(parser_.parse(v)) {};
+
+	template<typename P, typename C>
+	Basic_version<P, C>::Basic_version(const Basic_version<P, C>&) = default;
+
+	template<typename P, typename C>
+	Basic_version<P, C>& Basic_version<P, C>::operator=(const Basic_version<P, C>&) = default;
+
+	template<typename P, typename C>
 	const int Basic_version<P, C>::major() const {
 		return ver_.major;
 	}
