@@ -32,8 +32,8 @@ version::Semver200_parser p;
 const version::Prerelease_identifiers no_rel_ids;
 const version::Build_identifiers no_build_ids;
 
-#define N Identifier_type::num
-#define A Identifier_type::alnum
+#define N Id_type::num
+#define A Id_type::alnum
 
 #define BOOST_PATCH BOOST_VERSION % 100
 #define BOOST_MINOR BOOST_VERSION / 100 % 1000

@@ -24,107 +24,112 @@ SOFTWARE.
 
 #include <functional>
 #include <map>
-#include "common/semver200.h"
+#include "semver200.h"
+
+#ifdef _MSC_VER
+// disable symbol name too long warning
+#pragma warning(disable:4503)
+#endif
 
 using namespace std;
 
-namespace {
-	enum class Parser_state {
-		major, minor, patch, prerelease, build
-	};
-
-	using Validator = function<void(const string&, const char)>;
-	using State_transition_hook = function<void(string&)>;
-	/// State transition is described by a character that triggers it, a state to transition to and
-	/// optional hook to be invoked on transition.
-	using Transition = tuple<const char, Parser_state, State_transition_hook>;
-	using Transitions = vector<Transition>;
-	using State = tuple<Transitions, string&, Validator>;
-	using State_machine = map<Parser_state, State>;
-
-	// Ranges of characters allowed in prerelease and build identifiers.
-	const vector<pair<char, char>> allowed_prerel_id_chars = {
-			{ '0', '9' },{ 'A','Z' },{ 'a','z' },{ '-','-' }
-	};
-
-	inline Transition mkx(const char c, Parser_state p, State_transition_hook pth) {
-		return make_tuple(c, p, pth);
-	}
-
-	/// Advance parser state machine by a single step.
-	/**
-	Perform single step of parser state machine: if character matches one from transition tables -
-	trigger transition to next state; otherwise, validate if current token is in legal state
-	(throw Parse_error if not) and then add character to current token; State transition includes
-	preparing various vars for next state and invoking state transition hook (if specified) which is
-	where whole tokens are validated.
-	*/
-	inline void process_char(const char c, Parser_state& cstate, Parser_state& pstate,
-		const Transitions& transitions, string& target, Validator validate) {
-		for (const auto& transition : transitions) {
-			if (c == get<0>(transition)) {
-				if (get<2>(transition)) get<2>(transition)(target);
-				pstate = cstate;
-				cstate = get<1>(transition);
-				return;
-			}
-		}
-		validate(target, c);
-		target.push_back(c);
-	}
-
-	/// Validate normal (major, minor, patch) version components.
-	inline void normal_version_validator(const string& tgt, const char c) {
-		if (c < '0' || c > '9') throw version::Parse_error("invalid character encountered: " + string(1, c));
-		if (tgt.compare(0, 1, "0") == 0) throw version::Parse_error("leading 0 not allowed");
-	}
-
-	/// Validate that prerelease and build version identifiers are comprised of allowed chars only.
-	inline void prerelease_version_validator(const string&, const char c) {
-		bool res = false;
-		for (const auto& r : allowed_prerel_id_chars) {
-			res |= (c >= r.first && c <= r.second);
-		}
-		if (!res)
-			throw version::Parse_error("invalid character encountered: " + string(1, c));
-	}
-
-	inline bool is_identifier_numeric(const string& id) {
-		return id.find_first_not_of("0123456789") == string::npos;
-	}
-
-	inline bool check_for_leading_0(const string& str) {
-		return str.length() > 1 && str[0] == '0';
-	}
-
-	/// Validate every individual prerelease identifier, determine it's type and add it to collection.
-	void prerelease_hook_impl(string& id, version::Prerelease_identifiers& prerelease) {
-		using namespace version;
-		if (id.empty()) throw Parse_error("version identifier cannot be empty");
-		Identifier_type t = Identifier_type::alnum;
-		if (is_identifier_numeric(id)) {
-			t = Identifier_type::num;
-			if (check_for_leading_0(id)) {
-				throw Parse_error("numeric identifiers cannot have leading 0");
-			}
-		}
-		prerelease.push_back(Prerelease_identifier(id, t));
-		id.clear();
-	}
-
-	/// Validate every individual build identifier and add it to collection.
-	void build_hook_impl(string& id, Parser_state& pstate, version::Build_identifiers& build,
-		std::string& prerelease_id, version::Prerelease_identifiers& prerelease) {
-		// process last token left from parsing prerelease data
-		if (pstate == Parser_state::prerelease) prerelease_hook_impl(prerelease_id, prerelease);
-		if (id.empty()) throw version::Parse_error("version identifier cannot be empty");
-		build.push_back(id);
-		id.clear();
-	}
-
-}
-
 namespace version {
+
+	namespace {
+		enum class Parser_state {
+			major, minor, patch, prerelease, build
+		};
+
+		using Validator = function<void(const string&, const char)>;
+		using State_transition_hook = function<void(string&)>;
+		/// State transition is described by a character that triggers it, a state to transition to and
+		/// optional hook to be invoked on transition.
+		using Transition = tuple<const char, Parser_state, State_transition_hook>;
+		using Transitions = vector<Transition>;
+		using State = tuple<Transitions, string&, Validator>;
+		using State_machine = map<Parser_state, State>;
+
+		// Ranges of characters allowed in prerelease and build identifiers.
+		const vector<pair<char, char>> allowed_prerel_id_chars = {
+				{ '0', '9' },{ 'A','Z' },{ 'a','z' },{ '-','-' }
+		};
+
+		inline Transition mkx(const char c, Parser_state p, State_transition_hook pth) {
+			return make_tuple(c, p, pth);
+		}
+
+		/// Advance parser state machine by a single step.
+		/**
+		Perform single step of parser state machine: if character matches one from transition tables -
+		trigger transition to next state; otherwise, validate if current token is in legal state
+		(throw Parse_error if not) and then add character to current token; State transition includes
+		preparing various vars for next state and invoking state transition hook (if specified) which is
+		where whole tokens are validated.
+		*/
+		inline void process_char(const char c, Parser_state& cstate, Parser_state& pstate,
+			const Transitions& transitions, string& target, Validator validate) {
+			for (const auto& transition : transitions) {
+				if (c == get<0>(transition)) {
+					if (get<2>(transition)) get<2>(transition)(target);
+					pstate = cstate;
+					cstate = get<1>(transition);
+					return;
+				}
+			}
+			validate(target, c);
+			target.push_back(c);
+		}
+
+		/// Validate normal (major, minor, patch) version components.
+		inline void normal_version_validator(const string& tgt, const char c) {
+			if (c < '0' || c > '9') throw Parse_error("invalid character encountered: " + string(1, c));
+			if (tgt.compare(0, 1, "0") == 0) throw Parse_error("leading 0 not allowed");
+		}
+
+		/// Validate that prerelease and build version identifiers are comprised of allowed chars only.
+		inline void prerelease_version_validator(const string&, const char c) {
+			bool res = false;
+			for (const auto& r : allowed_prerel_id_chars) {
+				res |= (c >= r.first && c <= r.second);
+			}
+			if (!res)
+				throw Parse_error("invalid character encountered: " + string(1, c));
+		}
+
+		inline bool is_identifier_numeric(const string& id) {
+			return id.find_first_not_of("0123456789") == string::npos;
+		}
+
+		inline bool check_for_leading_0(const string& str) {
+			return str.length() > 1 && str[0] == '0';
+		}
+
+		/// Validate every individual prerelease identifier, determine it's type and add it to collection.
+		void prerelease_hook_impl(string& id, Prerelease_identifiers& prerelease) {
+			using namespace version;
+			if (id.empty()) throw Parse_error("version identifier cannot be empty");
+			Id_type t = Id_type::alnum;
+			if (is_identifier_numeric(id)) {
+				t = Id_type::num;
+				if (check_for_leading_0(id)) {
+					throw Parse_error("numeric identifiers cannot have leading 0");
+				}
+			}
+			prerelease.push_back(Prerelease_identifier(id, t));
+			id.clear();
+		}
+
+		/// Validate every individual build identifier and add it to collection.
+		void build_hook_impl(string& id, Parser_state& pstate, Build_identifiers& build,
+			std::string& prerelease_id, Prerelease_identifiers& prerelease) {
+			// process last token left from parsing prerelease data
+			if (pstate == Parser_state::prerelease) prerelease_hook_impl(prerelease_id, prerelease);
+			if (id.empty()) throw Parse_error("version identifier cannot be empty");
+			build.push_back(id);
+			id.clear();
+		}
+
+	}
 
 	/// Parse semver 2.0.0-compatible string to Version_data structure.
 	/**

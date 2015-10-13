@@ -33,73 +33,77 @@ namespace version {
 		/// Utility function to splice all vector elements to output stream, using designated separator 
 		/// between elements and function object for getting values from vector elements.
 		template<typename T, typename F>
-		std::ostream& splice(std::ostream& os, const std::vector<T>& v, const std::string& sep, F read) {
-			if (!v.empty()) {
-				for (auto it = v.cbegin(); it < v.cend() - 1; ++it) {
+		std::ostream& splice(std::ostream& os, const std::vector<T>& vec, const std::string& sep, F read) {
+			if (!vec.empty()) {
+				for (auto it = vec.cbegin(); it < vec.cend() - 1; ++it) {
 					os << read(*it) << sep;
 				}
-				os << read(*v.crbegin());
+				os << read(*vec.crbegin());
 			}
 			return os;
 		}
 	}
 
-	template<typename P, typename C>
-	Basic_version<P, C>::Basic_version(P p, C c)
+	template<typename Parser, typename Comparator>
+	Basic_version<Parser, Comparator>::Basic_version(Parser p, Comparator c)
 		: parser_(p), comparator_(c), ver_(parser_.parse("0.0.0")) {};
 
-	template<typename P, typename C>
-	Basic_version<P, C>::Basic_version(const std::string& v, P p, C c)
+	template<typename Parser, typename Comparator>
+	Basic_version<Parser, Comparator>::Basic_version(const std::string& v, Parser p, Comparator c)
 		: parser_(p), comparator_(c), ver_(parser_.parse(v)) {};
 
-	template<typename P, typename C>
-	Basic_version<P, C>::Basic_version(const Basic_version<P, C>&) = default;
+	template<typename Parser, typename Comparator>
+	Basic_version<Parser, Comparator>::Basic_version(const Basic_version<Parser, Comparator>&) = default;
 
-	template<typename P, typename C>
-	Basic_version<P, C>& Basic_version<P, C>::operator=(const Basic_version<P, C>&) = default;
+	template<typename Parser, typename Comparator>
+	Basic_version<Parser, Comparator>& Basic_version<Parser, Comparator>::operator=(
+		const Basic_version<Parser, Comparator>&) = default;
 
-	template<typename P, typename C>
-	const int Basic_version<P, C>::major() const {
+	template<typename Parser, typename Comparator>
+	const int Basic_version<Parser, Comparator>::major() const {
 		return ver_.major;
 	}
 
-	template<typename P, typename C>
-	const int Basic_version<P, C>::minor() const {
+	template<typename Parser, typename Comparator>
+	const int Basic_version<Parser, Comparator>::minor() const {
 		return ver_.minor;
 	}
 
-	template<typename P, typename C>
-	const int Basic_version<P, C>::patch() const {
+	template<typename Parser, typename Comparator>
+	const int Basic_version<Parser, Comparator>::patch() const {
 		return ver_.patch;
 	}
 
-	template<typename P, typename C>
-	const std::string Basic_version<P, C>::prerelease() const {
+	template<typename Parser, typename Comparator>
+	const std::string Basic_version<Parser, Comparator>::prerelease() const {
 		std::stringstream ss;
 		splice(ss, ver_.prerelease_ids, ".", [](const auto& id) { return id.first;});
 		return ss.str();
 	}
 
-	template<typename P, typename C>
-	const std::string Basic_version<P, C>::build() const {
+	template<typename Parser, typename Comparator>
+	const std::string Basic_version<Parser, Comparator>::build() const {
 		std::stringstream ss;
 		splice(ss, ver_.build_ids, ".", [](const auto& id) { return id;});
 		return ss.str();
 	}
 
 
-	template<typename P, typename C>
-	bool operator<(const Basic_version<P, C>& l, const Basic_version<P, C>& r) {
+	template<typename Parser, typename Comparator>
+	bool operator<(const Basic_version<Parser, Comparator>& l,
+		const Basic_version<Parser, Comparator>& r) {
 		return l.comparator_.compare(l.ver_, r.ver_) == -1;
 	}
 
-	template<typename P, typename C>
-	bool operator==(const version::Basic_version<P, C>& l, const version::Basic_version<P, C>& r) {
+	template<typename Parser, typename Comparator>
+	bool operator==(const Basic_version<Parser, Comparator>& l,
+		const Basic_version<Parser, Comparator>& r) {
 		return l.comparator_.compare(l.ver_, r.ver_) == 0;
 	}
 
-	template<typename P, typename C>
-	std::ostream& operator<<(std::ostream& os, const version::Basic_version<P, C>& v) {
+	template<typename Parser, typename Comparator>
+	std::ostream& operator<<(std::ostream& os,
+		const Basic_version<Parser, Comparator>& v) {
 		os << v.ver_.major << "." << v.ver_.minor << "." << v.ver_.patch;
 		std::string prl = v.prerelease();
 		if (!prl.empty()) {
@@ -112,27 +116,27 @@ namespace version {
 		return os;
 	}
 
-	/// Compare if two version objects are different.
-	template<typename P, typename C>
-	inline bool operator!=(const version::Basic_version<P, C>& l, const version::Basic_version<P, C>& r) {
+	template<typename Parser, typename Comparator>
+	inline bool operator!=(const Basic_version<Parser, Comparator>& l,
+		const Basic_version<Parser, Comparator>& r) {
 		return !(l == r);
 	}
 
-	/// Compare if left version object is greater than the right.
-	template<typename P, typename C>
-	inline bool operator>(const version::Basic_version<P, C>& l, const version::Basic_version<P, C>& r) {
+	template<typename Parser, typename Comparator>
+	inline bool operator>(const Basic_version<Parser, Comparator>& l,
+		const Basic_version<Parser, Comparator>& r) {
 		return r < l;
 	}
 
-	/// Compare if left version object is greater than or equal the right.
-	template<typename P, typename C>
-	inline bool operator>=(const version::Basic_version<P, C>& l, const version::Basic_version<P, C>& r) {
+	template<typename Parser, typename Comparator>
+	inline bool operator>=(const Basic_version<Parser, Comparator>& l,
+		const Basic_version<Parser, Comparator>& r) {
 		return !(l < r);
 	}
 
-	/// Compare if left version object is less than or equal the right.
-	template<typename P, typename C>
-	inline bool operator<=(const version::Basic_version<P, C>& l, const version::Basic_version<P, C>& r) {
+	template<typename Parser, typename Comparator>
+	inline bool operator<=(const Basic_version<Parser, Comparator>& l,
+		const Basic_version<Parser, Comparator>& r) {
 		return !(l > r);
 	}
 }
