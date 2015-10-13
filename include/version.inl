@@ -34,10 +34,12 @@ namespace version {
 		/// between elements and function object for getting values from vector elements.
 		template<typename T, typename F>
 		std::ostream& splice(std::ostream& os, const std::vector<T>& v, const std::string& sep, F read) {
-			for (auto it = v.cbegin(); it < v.cend() - 1; ++it) {
-				os << read(*it) << sep;
+			if (!v.empty()) {
+				for (auto it = v.cbegin(); it < v.cend() - 1; ++it) {
+					os << read(*it) << sep;
+				}
+				os << read(*v.crbegin());
 			}
-			os << read(*v.crbegin());
 			return os;
 		}
 	}
