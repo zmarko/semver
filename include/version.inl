@@ -24,6 +24,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <sstream>
 #include "version.h"
 
 namespace version {
@@ -46,11 +47,11 @@ namespace version {
 
 	template<typename Parser, typename Comparator>
 	Basic_version<Parser, Comparator>::Basic_version(Parser p, Comparator c)
-		: parser_(p), comparator_(c), ver_(parser_.parse("0.0.0")) {};
+		: parser_(p), comparator_(c), ver_(parser_.parse("0.0.0")) {}
 
 	template<typename Parser, typename Comparator>
 	Basic_version<Parser, Comparator>::Basic_version(const std::string& v, Parser p, Comparator c)
-		: parser_(p), comparator_(c), ver_(parser_.parse(v)) {};
+		: parser_(p), comparator_(c), ver_(parser_.parse(v)) {}
 
 	template<typename Parser, typename Comparator>
 	Basic_version<Parser, Comparator>::Basic_version(const Basic_version<Parser, Comparator>&) = default;
@@ -60,17 +61,17 @@ namespace version {
 		const Basic_version<Parser, Comparator>&) = default;
 
 	template<typename Parser, typename Comparator>
-	const int Basic_version<Parser, Comparator>::major() const {
+	int Basic_version<Parser, Comparator>::major() const {
 		return ver_.major;
 	}
 
 	template<typename Parser, typename Comparator>
-	const int Basic_version<Parser, Comparator>::minor() const {
+	int Basic_version<Parser, Comparator>::minor() const {
 		return ver_.minor;
 	}
 
 	template<typename Parser, typename Comparator>
-	const int Basic_version<Parser, Comparator>::patch() const {
+	int Basic_version<Parser, Comparator>::patch() const {
 		return ver_.patch;
 	}
 

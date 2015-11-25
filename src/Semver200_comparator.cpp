@@ -72,7 +72,7 @@ namespace version {
 		};
 
 		// Compare prerelease identifiers based on their types.
-		int compare_prerel_identifiers(const Prerelease_identifier& l, const Prerelease_identifier& r) {
+		inline int compare_prerel_identifiers(const Prerelease_identifier& l, const Prerelease_identifier& r) {
 			auto cmp = comparators.at({ l.second, r.second });
 			return cmp(l.first, r.first);
 		}
