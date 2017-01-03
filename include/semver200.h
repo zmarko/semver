@@ -38,14 +38,28 @@ namespace version {
 		int compare(const Version_data&, const Version_data&) const;
 	};
 
+	struct Semver200_modifier {
+		Version_data set_major(const Version_data&, const int) const;
+		Version_data set_minor(const Version_data&, const int) const;
+		Version_data set_patch(const Version_data&, const int) const;
+		Version_data set_prerelease(const Version_data&, const Prerelease_identifiers&) const;
+		Version_data set_build(const Version_data&, const Build_identifiers&) const;
+
+		Version_data reset_major(const Version_data&, const int) const;
+		Version_data reset_minor(const Version_data&, const int) const;
+		Version_data reset_patch(const Version_data&, const int) const;
+		Version_data reset_prerelease(const Version_data&, const Prerelease_identifiers&) const;
+		Version_data reset_build(const Version_data&, const Build_identifiers&) const;
+	};
+
 	/// Concrete version class that binds all semver 2.0.0 functionality together.
-	class Semver200_version : public Basic_version<Semver200_parser, Semver200_comparator> {
+	class Semver200_version : public Basic_version<Semver200_parser, Semver200_comparator, Semver200_modifier> {
 	public:
 		Semver200_version()
-			: Basic_version{ Semver200_parser(), Semver200_comparator() } {}
+			: Basic_version{ Semver200_parser(), Semver200_comparator(), Semver200_modifier() } {}
 
 		Semver200_version(const std::string& v)
-			: Basic_version{ v, Semver200_parser(), Semver200_comparator() } {}
+			: Basic_version{ v, Semver200_parser(), Semver200_comparator(), Semver200_modifier() } {}
 	};
 
 }
