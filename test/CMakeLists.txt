@@ -26,3 +26,9 @@ target_link_libraries(semver200_version_tests
 	${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
 	semver
 )
+
+add_executable(semver200_modifier_tests semver200_modifier_tests.cpp clang_fixes.cpp)
+target_link_libraries(semver200_modifier_tests
+	${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+	semver
+)
