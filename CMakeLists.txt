@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 project(semver)
-set(VERSION_MAJOR   "0")
-set(VERSION_MINOR   "1")
+set(VERSION_MAJOR   "1")
+set(VERSION_MINOR   "0")
 set(VERSION_PATCH   "0")
-set(VERSION_RELEASE "alpha")
+set(VERSION_RELEASE "")
 set(VERSION_BUILD   "")
 
 # Build full version string, including optional components
@@ -14,7 +14,7 @@ if(HAVE_RELEASE)
 	set(VERSION_FULL "${VERSION_FULL}-${VERSION_RELEASE}")
 endif()
 if(HAVE_BUILD)
-	set(VERSION_FULL "${VERSION_FULL}-${VERSION_BUILD}")
+	set(VERSION_FULL "${VERSION_FULL}+${VERSION_BUILD}")
 endif()
 
 if(UNIX)
