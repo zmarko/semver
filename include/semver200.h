@@ -38,14 +38,51 @@ namespace version {
 		int compare(const Version_data&, const Version_data&) const;
 	};
 
+	/// Implementation of various version modification methods.
+	/**
+	All methods are non-destructive, i.e. they return a new object with modified properties;
+	original object is never modified.
+	*/
+	struct Semver200_modifier {
+		/// Set major version to specified value leaving all other components unchanged..
+		Version_data set_major(const Version_data&, const int) const;
+
+		/// Set minor version to specified value leaving all other components unchanged.
+		Version_data set_minor(const Version_data&, const int) const;
+
+		/// Set patch version to specified value leaving all other components unchanged.
+		Version_data set_patch(const Version_data&, const int) const;
+
+		/// Set pre-release version to specified value leaving all other components unchanged.
+		Version_data set_prerelease(const Version_data&, const Prerelease_identifiers&) const;
+
+		/// Set build version to specified value leaving all other components unchanged.
+		Version_data set_build(const Version_data&, const Build_identifiers&) const;
+
+		/// Set major version to specified value resetting all lower-priority components to zero/empty values.
+		Version_data reset_major(const Version_data&, const int) const;
+
+		/// Set minor version to specified value resetting all lower-priority components to zero/empty values.
+		Version_data reset_minor(const Version_data&, const int) const;
+
+		/// Set patch version to specified value resetting all lower-priority components to zero/empty values.
+		Version_data reset_patch(const Version_data&, const int) const;
+
+		/// Set pre-release version to specified value resetting all lower-priority components to zero/empty values.
+		Version_data reset_prerelease(const Version_data&, const Prerelease_identifiers&) const;
+
+		/// Set build version to specified value.
+		Version_data reset_build(const Version_data&, const Build_identifiers&) const;
+	};
+
 	/// Concrete version class that binds all semver 2.0.0 functionality together.
-	class Semver200_version : public Basic_version<Semver200_parser, Semver200_comparator> {
+	class Semver200_version : public Basic_version<Semver200_parser, Semver200_comparator, Semver200_modifier> {
 	public:
 		Semver200_version()
-			: Basic_version{ Semver200_parser(), Semver200_comparator() } {}
+			: Basic_version{ Semver200_parser(), Semver200_comparator(), Semver200_modifier() } {}
 
 		Semver200_version(const std::string& v)
-			: Basic_version{ v, Semver200_parser(), Semver200_comparator() } {}
+			: Basic_version{ v, Semver200_parser(), Semver200_comparator(), Semver200_modifier() } {}
 	};
 
 }
