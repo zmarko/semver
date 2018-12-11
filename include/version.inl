@@ -82,14 +82,14 @@ namespace version {
 	template<typename Parser, typename Comparator, typename Modifier>
 	const std::string Basic_version<Parser, Comparator, Modifier>::prerelease() const {
 		std::stringstream ss;
-		splice(ss, ver_.prerelease_ids, ".", [](const auto& id) { return id.first;});
+		splice(ss, ver_.prerelease_ids, ".", [](const Prerelease_identifier& id) { return id.first;});
 		return ss.str();
 	}
 
 	template<typename Parser, typename Comparator, typename Modifier>
 	const std::string Basic_version<Parser, Comparator, Modifier>::build() const {
 		std::stringstream ss;
-		splice(ss, ver_.build_ids, ".", [](const auto& id) { return id;});
+		splice(ss, ver_.build_ids, ".", [](const Build_identifier& id) { return id;});
 		return ss.str();
 	}
 
