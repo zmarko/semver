@@ -86,7 +86,7 @@ The code is written in C++14, so, fairly recent compiler is required to build it
 - GCC 5.1.1
 - Clang 3.7.0
 
-Library itself does not have any external dependencies. Unit tests that verify the library work as expected, on the other hand, depend on the [Boost.Test](http://www.boost.org/doc/libs/1_59_0/libs/test/doc/html/index.html) library. If you do not have and do not want to install Boost.Test, then comment out appropriate section of CMakeLists.txt file.
+Library itself does not have any external dependencies. Unit tests that verify the library work as expected, on the other hand, depend on the [Boost.Test](http://www.boost.org/doc/libs/1_59_0/libs/test/doc/html/index.html) library. If you do not have and do not want to install Boost.Test, then pass cmake a `-DENABLE_TESTS=0` flag.
 
 The code comes with CMake project files. In order to build it you should:
 
