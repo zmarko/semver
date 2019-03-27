@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 2.8)
 project(semver)
 set(VERSION_MAJOR   "1")
-set(VERSION_MINOR   "0")
+set(VERSION_MINOR   "1")
 set(VERSION_PATCH   "0")
 set(VERSION_RELEASE "")
 set(VERSION_BUILD   "")
+
+option(SEMVER_ENABLE_TESTING "Adds tests subdirectory and enables testing" OFF)
 
 # Build full version string, including optional components
 string(COMPARE NOTEQUAL VERSION_RELEASE "" HAVE_RELEASE)
@@ -32,10 +34,13 @@ if(MSVC)
 endif()
 
 add_subdirectory(src)
-add_subdirectory(test)
 
-enable_testing()
-add_test(NAME semver200_parser_tests COMMAND semver200_parser_tests)
-add_test(NAME semver200_comparator_tests COMMAND semver200_comparator_tests)
-add_test(NAME semver200_version_tests COMMAND semver200_version_tests)
-add_test(NAME semver200_modifier_tests COMMAND semver200_modifier_tests)
+if (SEMVER_ENABLE_TESTING)
+  add_subdirectory(test)
+
+  enable_testing()
+  add_test(NAME semver200_parser_tests COMMAND semver200_parser_tests)
+  add_test(NAME semver200_comparator_tests COMMAND semver200_comparator_tests)
+  add_test(NAME semver200_version_tests COMMAND semver200_version_tests)
+  add_test(NAME semver200_modifier_tests COMMAND semver200_modifier_tests)
+endif()
