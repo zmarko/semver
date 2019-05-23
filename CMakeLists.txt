@@ -7,6 +7,7 @@ set(VERSION_RELEASE "SNAPSHOT")
 set(VERSION_BUILD   "")
 
 option(SEMVER_ENABLE_TESTING "Adds tests subdirectory and enables testing" OFF)
+option(SEMVER_USE_STATIC_CRT "Use static (DLL) run-time lib." OFF)
 
 # Build full version string, including optional components
 string(COMPARE NOTEQUAL VERSION_RELEASE "" HAVE_RELEASE)
@@ -30,6 +31,14 @@ if(WIN32)
 endif()
 
 if(MSVC)
+  foreach (flag_var
+    CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+    CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+    if (SEMVER_USE_STATIC_CRT)
+      string(REPLACE "/MD" "-MT" ${flag_var} "${${flag_var}}")
+    endif()
+  endforeach()
+
 	add_definitions(-D_SCL_SECURE_NO_WARNINGS)
 endif()
 

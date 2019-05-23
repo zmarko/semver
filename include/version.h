@@ -28,6 +28,9 @@ SOFTWARE.
 #include <string>
 #include <vector>
 
+#undef minor
+#undef major
+
 namespace version {
 
 	/// Any error in parsing or validation of version string will result in Parse_error exception being thrown.

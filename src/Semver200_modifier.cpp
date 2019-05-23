@@ -50,7 +50,7 @@ namespace version {
 		return Version_data{ s.major, s.minor, s.patch, s.prerelease_ids, b };
 	}
 
-	Version_data Semver200_modifier::reset_major(const Version_data& s, const int m) const {
+	Version_data Semver200_modifier::reset_major(const Version_data&, const int m) const {
 		if (m < 0) throw Modification_error("major version cannot be less than 0");
 		return Version_data{ m, 0, 0, Prerelease_identifiers{}, Build_identifiers{} };
 	}
