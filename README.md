@@ -6,7 +6,7 @@ Parsing and comparing two version strings:
 ```c++
 #include "semver200.h"
 
-void main(int, char**) {
+int main(int, char**) {
     version::Semver200_version v1("1.0.0");
     version::Semver200_version v2("2.0.0");
 
@@ -23,7 +23,7 @@ Accessing individual version components:
 ```c++
 #include "semver200.h"
 
-void main(int, char**) {
+int main(int, char**) {
     version::Semver200_version v("1.2.3-alpha.1+build.no.123");
     std::cout << "Major: " << v.major() << std::endl;
     std::cout << "Minor: " << v.minor() << std::endl;
@@ -53,7 +53,7 @@ A few examples of version modifications:
 ```c++
 #include "semver200.h"
 
-void main(int, char**) {
+int main(int, char**) {
     version::Semver200_version v("1.2.3-alpha.1+build.no.123");
     std::cout << "Next major version: " << v.inc_major() << std::endl;
     std::cout << "Next but one major: " << v.inc_major(2) << std::endl;
